@@ -1,7 +1,7 @@
 import numpy  as np
 import tables as tb
 
-from invisible_cities.reco       import tbl_functions as tbl
+from invisible_cities.core       import tbl_functions as tbl
 
 from olivia.histos import HistoManager
 from olivia.histos import Histogram

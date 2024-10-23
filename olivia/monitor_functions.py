@@ -1,3 +1,11 @@
+import sys,os,os.path
+sys.path.append("/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/Olivia/")
+sys.path.append("/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/IC/")
+sys.path.append(os.path.expanduser('~/code/eol_hsrl_python'))
+os.environ['ICTDIR']='/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/Olivia/'
+
+
+
 import glob
 from   collections import defaultdict
 
@@ -12,9 +20,10 @@ from invisible_cities.core     import system_of_units as units
 
 from invisible_cities.io  .pmaps_io                import      load_pmaps
 from invisible_cities.io  .dst_io                  import        load_dst
-from invisible_cities.reco.tbl_functions           import get_vectors
-from invisible_cities.reco.calib_sensors_functions import           modes
-from invisible_cities.reco.calib_functions         import      SensorType
+from invisible_cities.core.tbl_functions           import get_vectors
+from invisible_cities.calib.calib_sensors_functions import           modes
+from invisible_cities.calib.calib_functions         import      SensorType
+
 
 
 def pmap_bins(config_dict):
