@@ -1,5 +1,9 @@
-import sys
-import os
+import sys,os,os.path
+sys.path.append("/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/Olivia/")
+sys.path.append("/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/IC/")
+sys.path.append(os.path.expanduser('~/code/eol_hsrl_python'))
+os.environ['ICTDIR']='/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/Olivia/'
+
 import json
 import numpy as np
 
@@ -32,10 +36,15 @@ def olivia(conf):
         config_dict = json.load(config_file)
         if   data_type == InputDataType.rwf  :
             histo_manager = monf.fill_rwf_histos (files_in, config_dict)
+            pmt_monitoring = monf.fill_pmt_monitoring_histos(files_in)
+
         elif data_type == InputDataType.pmaps:
             histo_manager = monf.fill_pmap_histos(files_in, detector_db,
                                                   run_number, config_dict)
+
         save_histomanager_to_file(histo_manager, file_out)
+
+    
 
 
 if __name__ == "__main__":
