@@ -307,6 +307,9 @@ def fill_rwf_histos(in_path, config_dict):
         histo_manager.fill_histograms(var)
     return histo_manager
 
+def fill_pmt_monitoring_histos(in_path):
+    print(f'This is the path {in_path}')
+
 
 # def kdst_bins(config_dict):
 #     """Generates the binning arrays and label of the kdst monitor plots from the
