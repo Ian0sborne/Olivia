@@ -1,3 +1,9 @@
+import sys,os,os.path
+sys.path.append("/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/Olivia/")
+sys.path.append("/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/IC/")
+sys.path.append(os.path.expanduser('~/code/eol_hsrl_python'))
+os.environ['ICTDIR']='/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/Olivia/'
+
 import os
 from   collections import defaultdict
 
@@ -16,8 +22,8 @@ from invisible_cities.core     import system_of_units as units
 
 from invisible_cities.evm .pmaps_test              import pmaps
 from invisible_cities.evm .pmaps_test              import sensor_responses
-from invisible_cities.reco.calib_sensors_functions import modes
-from invisible_cities.reco.calib_functions         import SensorType
+from invisible_cities.calib.calib_sensors_functions import           modes
+from invisible_cities.calib.calib_functions         import      SensorType
 
 
 @given(pmaps())
