@@ -204,7 +204,7 @@ def full_pmap_db_1d(pmap, sipm_db):
     del var['S2_YSiPM']
     del var['S2_SingleS1']
 
-    return pd.DataFrame([var])
+    return var #pd.DataFrame([var])
 
 def fill_pmap_histos(in_path, detector_db, run_number, config_dict):
     """Creates and returns a HistoManager object with the pmap histograms.
@@ -334,6 +334,46 @@ def find_pmap_with_s1_s2(pmaps):
     
     return results
 
+def get_pmt_pmap_info(pmap_database):
+    """
+    Analyses event peak data to find the peak with the highest integrated PMT energy 
+    and associates it with the corresponding PMT, returning a dictionary of PMT information.
+    """
+    # Initialize an empty dictionary to store final results
+    dictionary_list = []
+
+    # Loop over each event and its associated pmap
+    for pmap in pmap_database:
+
+        # Initialize the dictionary for the current event
+        pmt_pmaps_dict = {
+            "event": None,  # No need to append, just store the value
+            "energy": None,  # Directly store the value for energy
+            "SensorID": [],  # PMT numbers (array stays for all PMTs)
+            "pmtEnergy": []  # PMT energies (array stays for all PMTs)
+        }
+
+        # Add the corresponding data to the dictionary
+        pmt_pmaps_dict["event"] = pmap['event_no']  # Directly store event number
+        pmt_pmaps_dict["energy"] = pmap['S2_Energy']  # Store energy from S2 directly
+        pmt_pmaps_dict["SensorID"] = [i for i in range(60)]  # PMT number as the SensorID
+        pmt_pmaps_dict["pmtEnergy"] = [pmap[f'PMT{i}_S2_Energy'] for i in range(60)]  # Energy from PMTs
+
+        max_energy_index = pmt_pmaps_dict["energy"].index(max(pmt_pmaps_dict["energy"]))
+
+        pmt_pmaps_dict['energy'] = pmt_pmaps_dict['energy'][max_energy_index]
+
+        for pmt_id, energy_values in enumerate(pmt_pmaps_dict["pmtEnergy"]):
+
+            pmt_pmaps_dict["pmtEnergy"][pmt_id] = pmt_pmaps_dict["pmtEnergy"][pmt_id][max_energy_index]
+
+        if pmt_pmaps_dict['energy'] > 20000:
+            
+            dictionary_list.append(pmt_pmaps_dict)
+    
+    return dictionary_list
+
+
 def pmt_monitoring_test(in_path):
     
     file = '/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/DATA/run_13773_0020_ldc1_trg0.v2.0.0.20240522.ArConf.irene.h5' # Irene data loading' # Irene data loading
@@ -343,12 +383,29 @@ def pmt_monitoring_test(in_path):
     pmaps = load_pmaps(file)
     filtered_pmaps = find_pmap_with_s1_s2(pmaps)
 
-    for event_no, pmap in filtered_pmaps:
-        print(pmap)
-        database = full_pmap_db_1d(pmap, SiPM_db)
-        break
+    pmap_array = []
+    counter = 0
 
-    print(database)
+    for event_no, pmap in filtered_pmaps:
+        if counter == 2:
+            break
+        #print(pmap)  
+
+        pmap_database = full_pmap_db_1d(pmap, SiPM_db)
+
+        # Add event_no as a key-value pair in the dictionary
+        pmap_database['event_no'] = event_no
+
+        pmap_array.append(pmap_database)
+        counter += 1
+
+    #print(pmap_array[0].keys())
+
+    pmt_pmaps = get_pmt_pmap_info(pmap_array)
+
+    print(pmt_pmaps)
+
+    
 
 
 
