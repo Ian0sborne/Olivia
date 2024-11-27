@@ -337,16 +337,17 @@ def find_pmap_with_s1_s2(pmaps):
 def get_pmt_pmap_info(pmap_database):
     """
     Analyses event peak data to find the peak with the highest integrated PMT energy 
-    and associates it with the corresponding PMT, returning a dictionary of PMT information.
+    and associates it with the corresponding PMT, returning a list of dictionaries
+    of PMT information.
     """
-    # Initialize an empty dictionary to store final results
-    dictionary_list = []
+    # Initialize an empty array to store the final dictionaries
+    pmt_pmap_list = []
 
     # Loop over each event and its associated pmap
     for pmap in pmap_database:
 
         # Initialize the dictionary for the current event
-        pmt_pmaps_dict = {
+        pmt_pmaps = {
             "event": None,  # No need to append, just store the value
             "energy": None,  # Directly store the value for energy
             "SensorID": [],  # PMT numbers (array stays for all PMTs)
@@ -354,24 +355,24 @@ def get_pmt_pmap_info(pmap_database):
         }
 
         # Add the corresponding data to the dictionary
-        pmt_pmaps_dict["event"] = pmap['event_no']  # Directly store event number
-        pmt_pmaps_dict["energy"] = pmap['S2_Energy']  # Store energy from S2 directly
-        pmt_pmaps_dict["SensorID"] = [i for i in range(60)]  # PMT number as the SensorID
-        pmt_pmaps_dict["pmtEnergy"] = [pmap[f'PMT{i}_S2_Energy'] for i in range(60)]  # Energy from PMTs
+        pmt_pmaps["event"] = pmap['event_no']  # Directly store event number
+        pmt_pmaps["energy"] = pmap['S2_Energy']  # Store energy from S2 directly
+        pmt_pmaps["SensorID"] = [i for i in range(60)]  # PMT number as the SensorID
+        pmt_pmaps["pmtEnergy"] = [pmap[f'PMT{i}_S2_Energy'] for i in range(60)]  # Energy from PMTs
 
-        max_energy_index = pmt_pmaps_dict["energy"].index(max(pmt_pmaps_dict["energy"]))
+        max_energy_index = pmt_pmaps["energy"].index(max(pmt_pmaps["energy"]))
 
-        pmt_pmaps_dict['energy'] = pmt_pmaps_dict['energy'][max_energy_index]
+        pmt_pmaps['energy'] = pmt_pmaps['energy'][max_energy_index]
 
-        for pmt_id, energy_values in enumerate(pmt_pmaps_dict["pmtEnergy"]):
+        for pmt_id, energy_values in enumerate(pmt_pmaps["pmtEnergy"]):
 
-            pmt_pmaps_dict["pmtEnergy"][pmt_id] = pmt_pmaps_dict["pmtEnergy"][pmt_id][max_energy_index]
+            pmt_pmaps["pmtEnergy"][pmt_id] = pmt_pmaps["pmtEnergy"][pmt_id][max_energy_index]
 
-        if pmt_pmaps_dict['energy'] > 20000:
+        if pmt_pmaps['energy'] > 20000:
             
-            dictionary_list.append(pmt_pmaps_dict)
+            pmt_pmap_list.append(pmt_pmaps)
     
-    return dictionary_list
+    return pmt_pmap_list
 
 
 def pmt_monitoring_test(in_path):
