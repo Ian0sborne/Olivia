@@ -36,7 +36,7 @@ def olivia(conf):
         config_dict = json.load(config_file)
         if   data_type == InputDataType.rwf  :
             histo_manager = monf.fill_rwf_histos (files_in, config_dict)
-            pmt_monitoring = monf.fill_pmt_monitoring_histos(files_in)
+            pmt_monitoring = monf.pmt_monitoring_test(files_in)
 
         elif data_type == InputDataType.pmaps:
             histo_manager = monf.fill_pmap_histos(files_in, detector_db,
