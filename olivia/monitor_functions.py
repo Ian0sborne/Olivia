@@ -2,15 +2,14 @@ import sys,os,os.path
 sys.path.append("/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/Olivia/")
 sys.path.append("/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/IC/")
 sys.path.append(os.path.expanduser('~/code/eol_hsrl_python'))
-os.environ['ICTDIR']='/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/Olivia/'
-
-
+os.environ['ICTDIR']='/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/IC/'
 
 import glob
 from   collections import defaultdict
 
 import numpy  as np
 import tables as tb
+import pandas as pd
 
 from olivia        import histogram_functions as histf
 from olivia.histos import        HistoManager
@@ -193,6 +192,19 @@ def fill_pmap_var(pmap, sipm_db):
 
     return var
 
+def full_pmap_db_1d(pmap, sipm_db):
+    
+    var = defaultdict(list)
+
+    fill_pmap_var_1d(pmap.s1s, var, 'S1')
+    fill_pmap_var_1d(pmap.s2s, var, 'S2', sipm_db)
+    fill_pmt_var    (pmap.s2s, var)
+
+    del var['S2_XSiPM']
+    del var['S2_YSiPM']
+    del var['S2_SingleS1']
+
+    return pd.DataFrame([var])
 
 def fill_pmap_histos(in_path, detector_db, run_number, config_dict):
     """Creates and returns a HistoManager object with the pmap histograms.
@@ -307,8 +319,39 @@ def fill_rwf_histos(in_path, config_dict):
         histo_manager.fill_histograms(var)
     return histo_manager
 
-def fill_pmt_monitoring_histos(in_path):
-    print(f'This is the path {in_path}')
+def find_pmap_with_s1_s2(pmaps):
+    """
+    Finds all events where both S1 and S2 are present.
+    """
+    results = []
+
+    for evt_no, pmap in pmaps.items():
+        if pmap.s1s and pmap.s2s:
+            results.append((evt_no, pmap))
+    
+    if not results:
+        raise RuntimeError("There are no events with S1 and S2")
+    
+    return results
+
+def pmt_monitoring_test(in_path):
+    
+    file = '/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/DATA/run_13773_0020_ldc1_trg0.v2.0.0.20240522.ArConf.irene.h5' # Irene data loading' # Irene data loading
+
+    SiPM_db= dbf.DataSiPM('next100', 13773)
+
+    pmaps = load_pmaps(file)
+    filtered_pmaps = find_pmap_with_s1_s2(pmaps)
+
+    for event_no, pmap in filtered_pmaps:
+        print(pmap)
+        database = full_pmap_db_1d(pmap, SiPM_db)
+        break
+
+    print(database)
+
+
+
 
 
 # def kdst_bins(config_dict):
