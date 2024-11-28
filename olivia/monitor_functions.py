@@ -374,7 +374,7 @@ def get_pmt_pmap_info(pmap_database):
     
     return pmt_pmap_list
 
-def add_pmt_info(pmt_pmap, PMT_db):
+def add_pmt_info(pmt_pmap, PMT_db, time_data):
 
     # Initialize an empty array to store the final dictionaries
     pmt_pmap_list = []
@@ -385,11 +385,20 @@ def add_pmt_info(pmt_pmap, PMT_db):
         pmap['X'] = PMT_db.X.tolist()
         pmap['Y'] = PMT_db.Y.tolist()
         pmap['pmtEnergy'] = (pmap['pmtEnergy'] / np.array(PMT_db.adc_to_pes)).tolist()
+        pmap['time'] = time_data[time_data.evt_number == pmap['event']].timestamp.item()
 
         pmt_pmap_list.append(pmap)
 
     return pmt_pmap_list
 
+def read_time_data(path):
+    
+    data_files = glob.glob(path)
+
+    # Read and concatenate all PMAP files
+    time_data = pd.concat([pd.read_hdf(file, "/Run/events") for file in data_files], ignore_index=True)
+    
+    return time_data
 
 def pmt_monitoring_test(in_path):
     
@@ -397,6 +406,7 @@ def pmt_monitoring_test(in_path):
 
     SiPM_db= dbf.DataSiPM('next100', 13773)
     PMT_db = dbf.DataPMT('next100', 13773)
+    time_data = read_time_data(file)
 
     pmaps = load_pmaps(file)
     filtered_pmaps = find_pmap_with_s1_s2(pmaps)
@@ -421,7 +431,7 @@ def pmt_monitoring_test(in_path):
 
     pmt_pmaps = get_pmt_pmap_info(pmap_array)
 
-    pmt_pmaps = add_pmt_info(pmt_pmaps, PMT_db)
+    pmt_pmaps = add_pmt_info(pmt_pmaps, PMT_db, time_data)
 
     print(pmt_pmaps)
 
