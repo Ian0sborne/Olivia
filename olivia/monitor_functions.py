@@ -134,9 +134,12 @@ def fill_pmap_var_1d(speaks, var_dict, ptype, DataSiPM=None):
             var_dict    [ptype + '_NSiPM' ].append(len(sipm_ids))
             var_dict    [ptype + '_QSiPM' ].extend(sipm_Q)
             var_dict    [ptype + '_IdSiPM'].extend(sipm_ids)
+            var_dict    [ptype + '_QSiPM_list' ].append(sipm_Q)
+            var_dict    [ptype + '_IdSiPM_list'].append(sipm_ids)
             if len(sipm_ids) > 0:
                 var_dict[ptype + '_XSiPM' ].extend(DataSiPM.X.values[sipm_ids])
                 var_dict[ptype + '_YSiPM' ].extend(DataSiPM.Y.values[sipm_ids])
+
 
 
 def fill_pmap_var_2d(var_dict, ptype):
@@ -334,45 +337,90 @@ def find_pmap_with_s1_s2(pmaps):
     
     return results
 
-def get_pmt_pmap_info(pmap_database):
+def get_pmap_info(raw_pmap, sensor_type):
     """
-    Analyses event peak data to find the peak with the highest integrated PMT energy 
-    and associates it with the corresponding PMT, returning a list of dictionaries
-    of PMT information.
+    Analyses event peak data to find the peak with the highest integrated PMT energy / SiPM 
+    charge and associates it with the corresponding PMT / SiPM, returning a list of 
+    dictionaries of PMT / SiPM information.
     """
     # Initialize an empty array to store the final dictionaries
-    pmt_pmap_list = []
+    pmap_list = []
 
-    # Loop over each event and its associated pmap
-    for pmap in pmap_database:
+    if sensor_type == 'PMT':
 
-        # Initialize the dictionary for the current event
-        pmt_pmaps = {
-            "event": None,  # No need to append, just store the value
-            "energy": None,  # Directly store the value for energy
-            "SensorID": [],  # PMT numbers (array stays for all PMTs)
-            "pmtEnergy": []  # PMT energies (array stays for all PMTs)
-        }
+        # Loop over each pmap in the list of pmaps
+        for pmap in raw_pmap:
 
-        # Add the corresponding data to the dictionary
-        pmt_pmaps["event"] = pmap['event_no']  # Directly store event number
-        pmt_pmaps["energy"] = pmap['S2_Energy']  # Store energy from S2 directly
-        pmt_pmaps["SensorID"] = [i for i in range(60)]  # PMT number as the SensorID
-        pmt_pmaps["pmtEnergy"] = [pmap[f'PMT{i}_S2_Energy'] for i in range(60)]  # Energy from PMTs
+            # Initialize the dictionary for the current event
+            pmt_pmaps = {
+                "event": None,  # Event number
+                "energy": None,  # Energy list
+                "SensorID": [],  # PMT ID numbers
+                "pmtEnergy": []  # PMT energies list of lists
+            }
 
-        max_energy_index = pmt_pmaps["energy"].index(max(pmt_pmaps["energy"]))
+            # Add the corresponding data to the dictionary
+            pmt_pmaps["event"] = pmap['event_no']  
+            pmt_pmaps["energy"] = pmap['S2_Energy']  
+            pmt_pmaps["SensorID"] = [i for i in range(60)]  
+            pmt_pmaps["pmtEnergy"] = [pmap[f'PMT{i}_S2_Energy'] for i in range(60)]  
 
-        pmt_pmaps['energy'] = pmt_pmaps['energy'][max_energy_index]
+            # Finds the index of the maximum value of energy
+            max_energy_index = pmt_pmaps["energy"].index(max(pmt_pmaps["energy"]))
 
-        for pmt_id, energy_values in enumerate(pmt_pmaps["pmtEnergy"]):
+            # Retains only maximum energy value
+            pmt_pmaps['energy'] = pmt_pmaps['energy'][max_energy_index]
 
-            pmt_pmaps["pmtEnergy"][pmt_id] = pmt_pmaps["pmtEnergy"][pmt_id][max_energy_index]
+            # For each PMT energy, retains only the energy value at index: max_energy_index
+            for pmt_id, energy_values in enumerate(pmt_pmaps["pmtEnergy"]):
 
-        if pmt_pmaps['energy'] > 20000:
+                pmt_pmaps["pmtEnergy"][pmt_id] = pmt_pmaps["pmtEnergy"][pmt_id][max_energy_index]
             
-            pmt_pmap_list.append(pmt_pmaps)
+            # Only keeps events above an energy threshold
+            if pmt_pmaps['energy'] > 20000:
+                
+                pmap_list.append(pmt_pmaps)
     
-    return pmt_pmap_list
+    elif sensor_type == 'SiPM':
+
+        # Loop over each pmap in the list of pmaps
+        for pmap in raw_pmap:
+
+            # Initialize the dictionary for the current event
+            sipm_pmaps = {
+                "event": None,  # Event number
+                "charge": None,  # Charge list
+                "SensorID": [],  # SiPM ID numbers
+                "sipmCharge": []  # SiPM charges list of lists
+            }
+
+            # Add the corresponding data to the dictionary
+            sipm_pmaps["event"] = pmap['event_no']  
+            sipm_pmaps["charge"] = pmap['S2_Charge']  
+            sipm_pmaps["SensorID"] = pmap['S2_IdSiPM']
+            sipm_pmaps["sipmCharge"] = pmap['S2_QSiPM']
+
+            # Finds the index of the maximum value of charge
+            max_charge_index = sipm_pmaps["charge"].index(max(sipm_pmaps["charge"]))
+
+            # Retains only maximum charge value
+            sipm_pmaps['charge'] = sipm_pmaps['charge'][max_charge_index]
+
+            # For each sipm charge, retains only the charge value at index: max_charge_index
+            for sipm_id, charge_values in enumerate(sipm_pmaps["sipmCharge"]):
+
+                sipm_pmaps["sipmCharge"][sipm_id] = sipm_pmaps["sipmCharge"][sipm_id][max_charge_index]
+            
+            # Only keeps events above an charge threshold
+            if sipm_pmaps['charge'] > 20000:
+                
+                pmap_list.append(sipm_pmaps)
+
+    else: 
+
+        raise ValueError(f"Invalid sensor type '{sensor_type}'. Expected 'SiPM' or 'PMT'.")
+
+    return pmap_list
 
 def add_pmt_info(pmt_pmap, PMT_db, time_data):
 
@@ -464,9 +512,8 @@ def pmt_monitoring_test(in_path):
     counter = 0
 
     for event_no, pmap in filtered_pmaps:
-        #if counter == 3:
-            #break
-        #print(pmap)  
+        if counter == 2:
+            break
 
         pmap_database = full_pmap_db_1d(pmap, SiPM_db)
 
@@ -476,9 +523,9 @@ def pmt_monitoring_test(in_path):
         pmap_array.append(pmap_database)
         counter += 1
 
-    #print(pmap_array[0].keys())
+    print(len(pmap_array[0]['S2_QSiPM_list'][0]), len(pmap_array[0]['S2_IdSiPM_list'][0]))
 
-    pmt_pmaps = get_pmt_pmap_info(pmap_array)
+    pmt_pmaps = get_pmap_info(pmap_array, 'PMT')
 
     pmt_pmaps = add_pmt_info(pmt_pmaps, PMT_db, time_data)
 
