@@ -413,6 +413,32 @@ def make_time_slices(pmt_pmaps, interval):
     
     return time_slices
 
+def min_max_energy(time_slices):
+    """
+    Finds the absolute min and max energy values throughout all the dice boards 
+    in all the time slices.
+    """
+    # List to hold the sensor energy sums for each time slice
+    summed_energies_per_slice = []
+
+    # Iterate through each time mask
+    for slice in time_slices:
+        
+        slice_energy_sum = np.zeros(60)
+
+        for pmap in slice:
+            # Add the pmtEnergy array of this pmap to the slice_sum
+            slice_energy_sum += np.array(pmap['pmtEnergy'])
+
+        # Store the result for this slice
+        summed_energies_per_slice.append(slice_energy_sum)
+
+    # Calculate global min and max
+    global_min_energy = np.min(summed_energies_per_slice)
+    global_max_energy = np.max(summed_energies_per_slice)
+    
+    return global_min_energy, global_max_energy
+
 def read_time_data(path):
     
     data_files = glob.glob(path)
@@ -462,8 +488,12 @@ def pmt_monitoring_test(in_path):
 
     for i, slice in enumerate(time_slices):
         print(f'Events in time range {i*interval} - {(i+1)*interval} seconds')
-        for events in slice:
-            print(events['event'], events['time'])
+        for pmaps in slice:
+            print(pmaps['event'], pmaps['time'])
+
+    min_energy, max_energy = min_max_energy(time_slices)
+
+    print(min_energy, max_energy)
 
     
 
