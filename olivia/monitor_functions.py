@@ -420,20 +420,59 @@ def get_pmap_info(raw_pmap, sensor_type):
 
     return pmap_list
 
-def add_pmt_info(pmt_pmap, PMT_db, time_data):
+def map_sensor_ID(sipm_data, sipm_pmap):
+    """
+    Replaces the SiPM index values with conventional SensorID values and adds a StrippedID column for dice board analysis.
+    """
+
+    for pmap in sipm_pmap:
+
+        # Map SensorID values using the find_sipm_ID function
+        indeces = pmap['SensorID']
+
+        mapped_ids = [find_sipm_ID(val, sipm_data) for val in indeces]
+
+        # Create a mapping dictionary between SiPM indices and SensorIDs
+        id_mapping = dict(zip(indeces, mapped_ids))
+
+      # Replace SensorID with the mapped values
+        pmap['SensorID'] = mapped_ids
+
+        # Strip the last 3 digits of the SensorIDs to create StrippedID
+        pmap['StrippedID'] = [int(str(sensor_id)[:-3]) for sensor_id in mapped_ids]
+
+    return sipm_pmap
+
+def add_sensor_info(pmaps, Sensor_db, time_data, sensor_type):
 
     # Initialize an empty array to store the final dictionaries
     pmt_pmap_list = []
 
-    # Loop over each event and its associated pmap
-    for pmap in pmt_pmap:
+    if sensor_type == 'PMT':
+        # Loop over each event and its associated pmap
+        for pmap in pmaps:
 
-        pmap['X'] = PMT_db.X.tolist()
-        pmap['Y'] = PMT_db.Y.tolist()
-        pmap['pmtEnergy'] = (pmap['pmtEnergy'] / np.array(PMT_db.adc_to_pes)).tolist()
-        pmap['time'] = time_data[time_data.evt_number == pmap['event']].timestamp.item()
+            pmap['X'] = Sensor_db.X.tolist()
+            pmap['Y'] = Sensor_db.Y.tolist()
+            pmap['pmtEnergy'] = (pmap['pmtEnergy'] / np.array(Sensor_db.adc_to_pes)).tolist()
+            pmap['time'] = time_data[time_data.evt_number == pmap['event']].timestamp.item()
 
-        pmt_pmap_list.append(pmap)
+            pmt_pmap_list.append(pmap)
+
+    elif sensor_type == 'SiPM':
+
+        # Loop over each event and its associated pmap
+        for pmap in pmaps:
+
+            pmap['X'] = Sensor_db.X.tolist()
+            pmap['Y'] = Sensor_db.Y.tolist()
+            pmap['time'] = time_data[time_data.evt_number == pmap['event']].timestamp.item()
+
+            pmt_pmap_list.append(pmap)
+    
+    else: 
+
+        raise ValueError(f"Invalid sensor type '{sensor_type}'. Expected 'SiPM' or 'PMT'.")
 
     return pmt_pmap_list
 
@@ -485,6 +524,13 @@ def min_max_energy(time_slices):
     
     return global_min_energy, global_max_energy
 
+def find_sipm_ID(index, sipm_data):
+    """
+    Uses the SiPM index to find the conventional SensorID value for it
+    """
+    # Returns SensorID value
+    return np.array(sipm_data.SensorID)[index]
+
 def read_time_data(path):
     
     data_files = glob.glob(path)
@@ -526,7 +572,7 @@ def pmt_monitoring_test(in_path):
     pmt_pmaps = get_pmap_info(pmap_array, 'PMT')
 
 
-    pmt_pmaps = add_pmt_info(pmt_pmaps, PMT_db, time_data)
+    pmt_pmaps = add_sensor_info(pmt_pmaps, PMT_db, time_data, 'PMT')
 
     #print(pmt_pmaps)
 
@@ -541,8 +587,9 @@ def pmt_monitoring_test(in_path):
 
     #print(min_energy, max_energy)
 
-    pmt_pmaps = get_pmap_info(pmap_array, 'SiPM')
-    print(pmt_pmaps)
+    sipm_pmaps = get_pmap_info(pmap_array, 'SiPM')
+    sipm_pmaps = map_sensor_ID(SiPM_db, sipm_pmaps)
+    print(sipm_pmaps[0]['SensorID'])
 
     
 
