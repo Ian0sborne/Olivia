@@ -374,12 +374,29 @@ def get_pmt_pmap_info(pmap_database):
     
     return pmt_pmap_list
 
+def add_pmt_info(pmt_pmap, PMT_db):
+
+    # Initialize an empty array to store the final dictionaries
+    pmt_pmap_list = []
+
+    # Loop over each event and its associated pmap
+    for pmap in pmt_pmap:
+
+        pmap['X'] = PMT_db.X.tolist()
+        pmap['Y'] = PMT_db.Y.tolist()
+        pmap['pmtEnergy'] = (pmap['pmtEnergy'] / np.array(PMT_db.adc_to_pes)).tolist()
+
+        pmt_pmap_list.append(pmap)
+
+    return pmt_pmap_list
+
 
 def pmt_monitoring_test(in_path):
     
     file = '/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/DATA/run_13773_0020_ldc1_trg0.v2.0.0.20240522.ArConf.irene.h5' # Irene data loading' # Irene data loading
 
     SiPM_db= dbf.DataSiPM('next100', 13773)
+    PMT_db = dbf.DataPMT('next100', 13773)
 
     pmaps = load_pmaps(file)
     filtered_pmaps = find_pmap_with_s1_s2(pmaps)
@@ -403,6 +420,8 @@ def pmt_monitoring_test(in_path):
     #print(pmap_array[0].keys())
 
     pmt_pmaps = get_pmt_pmap_info(pmap_array)
+
+    pmt_pmaps = add_pmt_info(pmt_pmaps, PMT_db)
 
     print(pmt_pmaps)
 
