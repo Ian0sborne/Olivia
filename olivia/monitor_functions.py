@@ -397,8 +397,8 @@ def get_pmap_info(raw_pmap, sensor_type):
             # Add the corresponding data to the dictionary
             sipm_pmaps["event"] = pmap['event_no']  
             sipm_pmaps["charge"] = pmap['S2_Charge']  
-            sipm_pmaps["SensorID"] = pmap['S2_IdSiPM']
-            sipm_pmaps["sipmCharge"] = pmap['S2_QSiPM']
+            sipm_pmaps["SensorID"] = pmap['S2_IdSiPM_list']
+            sipm_pmaps["sipmCharge"] = pmap['S2_QSiPM_list']
 
             # Finds the index of the maximum value of charge
             max_charge_index = sipm_pmaps["charge"].index(max(sipm_pmaps["charge"]))
@@ -406,10 +406,8 @@ def get_pmap_info(raw_pmap, sensor_type):
             # Retains only maximum charge value
             sipm_pmaps['charge'] = sipm_pmaps['charge'][max_charge_index]
 
-            # For each sipm charge, retains only the charge value at index: max_charge_index
-            for sipm_id, charge_values in enumerate(sipm_pmaps["sipmCharge"]):
-
-                sipm_pmaps["sipmCharge"][sipm_id] = sipm_pmaps["sipmCharge"][sipm_id][max_charge_index]
+            sipm_pmaps['SensorID'] = sipm_pmaps['SensorID'][max_charge_index].tolist()
+            sipm_pmaps['sipmCharge'] = sipm_pmaps['sipmCharge'][max_charge_index].tolist()
             
             # Only keeps events above an charge threshold
             if sipm_pmaps['charge'] > 20000:
@@ -523,9 +521,10 @@ def pmt_monitoring_test(in_path):
         pmap_array.append(pmap_database)
         counter += 1
 
-    print(len(pmap_array[0]['S2_QSiPM_list'][0]), len(pmap_array[0]['S2_IdSiPM_list'][0]))
+    #print(len(pmap_array[0]['S2_QSiPM_list'][0]), len(pmap_array[0]['S2_IdSiPM_list'][0]))
 
     pmt_pmaps = get_pmap_info(pmap_array, 'PMT')
+
 
     pmt_pmaps = add_pmt_info(pmt_pmaps, PMT_db, time_data)
 
@@ -540,7 +539,10 @@ def pmt_monitoring_test(in_path):
 
     min_energy, max_energy = min_max_energy(time_slices)
 
-    print(min_energy, max_energy)
+    #print(min_energy, max_energy)
+
+    pmt_pmaps = get_pmap_info(pmap_array, 'SiPM')
+    print(pmt_pmaps)
 
     
 
