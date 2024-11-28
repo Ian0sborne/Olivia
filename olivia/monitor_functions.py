@@ -192,20 +192,6 @@ def fill_pmap_var(pmap, sipm_db):
 
     return var
 
-def full_pmap_db_1d(pmap, sipm_db):
-    
-    var = defaultdict(list)
-
-    fill_pmap_var_1d(pmap.s1s, var, 'S1')
-    fill_pmap_var_1d(pmap.s2s, var, 'S2', sipm_db)
-    fill_pmt_var    (pmap.s2s, var)
-
-    del var['S2_XSiPM']
-    del var['S2_YSiPM']
-    del var['S2_SingleS1']
-
-    return var #pd.DataFrame([var])
-
 def fill_pmap_histos(in_path, detector_db, run_number, config_dict):
     """Creates and returns a HistoManager object with the pmap histograms.
 
@@ -319,6 +305,20 @@ def fill_rwf_histos(in_path, config_dict):
         histo_manager.fill_histograms(var)
     return histo_manager
 
+def full_pmap_db_1d(pmap, sipm_db):
+    
+    var = defaultdict(list)
+
+    fill_pmap_var_1d(pmap.s1s, var, 'S1')
+    fill_pmap_var_1d(pmap.s2s, var, 'S2', sipm_db)
+    fill_pmt_var    (pmap.s2s, var)
+
+    del var['S2_XSiPM']
+    del var['S2_YSiPM']
+    del var['S2_SingleS1']
+
+    return var
+
 def find_pmap_with_s1_s2(pmaps):
     """
     Finds all events where both S1 and S2 are present.
@@ -391,6 +391,28 @@ def add_pmt_info(pmt_pmap, PMT_db, time_data):
 
     return pmt_pmap_list
 
+def make_time_slices(pmt_pmaps, interval):
+    """
+    Creates custom time slices to group the data in based on the provided interval.
+    """
+    # Finds the time limits of the data
+    min_time = min(pmap["time"] for pmap in pmt_pmaps)
+    max_time = max(pmap["time"] for pmap in pmt_pmaps)
+    
+    # Create the time slices
+    time_slices = []
+    for start in np.arange(0, max_time - min_time, interval):
+        end = start + interval
+
+        # Create a slice group for this interval
+        slice_group = [
+            pmap for pmap in pmt_pmaps
+            if start <= pmap["time"] - min_time < end
+        ]
+        time_slices.append(slice_group)
+    
+    return time_slices
+
 def read_time_data(path):
     
     data_files = glob.glob(path)
@@ -403,6 +425,7 @@ def read_time_data(path):
 def pmt_monitoring_test(in_path):
     
     file = '/Users/ianosborne/Desktop/University_of_Manchester_Physics.nosync/Masters/DATA/run_13773_0020_ldc1_trg0.v2.0.0.20240522.ArConf.irene.h5' # Irene data loading' # Irene data loading
+    interval = 3000
 
     SiPM_db= dbf.DataSiPM('next100', 13773)
     PMT_db = dbf.DataPMT('next100', 13773)
@@ -415,8 +438,8 @@ def pmt_monitoring_test(in_path):
     counter = 0
 
     for event_no, pmap in filtered_pmaps:
-        if counter == 2:
-            break
+        #if counter == 3:
+            #break
         #print(pmap)  
 
         pmap_database = full_pmap_db_1d(pmap, SiPM_db)
@@ -433,7 +456,14 @@ def pmt_monitoring_test(in_path):
 
     pmt_pmaps = add_pmt_info(pmt_pmaps, PMT_db, time_data)
 
-    print(pmt_pmaps)
+    #print(pmt_pmaps)
+
+    time_slices = make_time_slices(pmt_pmaps, interval)
+
+    for i, slice in enumerate(time_slices):
+        print(f'Events in time range {i*interval} - {(i+1)*interval} seconds')
+        for events in slice:
+            print(events['event'], events['time'])
 
     
 
